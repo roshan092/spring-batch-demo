@@ -33,7 +33,7 @@ public class DemoBatchConfiguration {
     public FlatFileItemReader<DemoBatchInput> reader() {
         LOGGER.info("FlatFileItemReader created ------------------->");
         FlatFileItemReader<DemoBatchInput> reader = new FlatFileItemReader<>();
-        reader.setResource(new FileSystemResource("C:\\Users\\roslobo\\spring-batch\\input\\sample-data-10.csv"));
+        reader.setResource(new FileSystemResource("C:\\Users\\roslobo\\spring-batch\\input\\sample-data-100.csv"));
         reader.setLinesToSkip(1);
         reader.setLineMapper(new DefaultLineMapper<DemoBatchInput>() {{
             setLineTokenizer(new DelimitedLineTokenizer() {{
@@ -51,7 +51,7 @@ public class DemoBatchConfiguration {
         LOGGER.info("FlatFileItemWriter created ------------------->");
         long timeStamp = new Date().getTime();
         FlatFileItemWriter<DemoBatchOutput> writer = new FlatFileItemWriter<>();
-        writer.setResource(new FileSystemResource("C:\\Users\\roslobo\\spring-batch\\output\\sample-data-10" + timeStamp + ".csv"));
+        writer.setResource(new FileSystemResource("C:\\Users\\roslobo\\spring-batch\\output\\sample-data-100" + timeStamp + ".csv"));
         writer.setHeaderCallback(
                 headerWriter -> headerWriter.write("id, value"));
 
