@@ -10,7 +10,10 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.launch.support.SimpleJobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
@@ -21,6 +24,8 @@ import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 
 import java.util.Date;
 
@@ -29,6 +34,7 @@ import java.util.Date;
 public class DemoBatchConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DemoBatchConfiguration.class);
+
     @Bean
     public FlatFileItemReader<DemoBatchInput> reader() {
         LOGGER.info("FlatFileItemReader created ------------------->");
@@ -85,6 +91,21 @@ public class DemoBatchConfiguration {
                 .flow(step)
                 .end()
                 .build();
+    }
+
+    @Bean
+    public TaskExecutor jobTaskExecutor() {
+        SimpleAsyncTaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
+        taskExecutor.setConcurrencyLimit(1);
+        return taskExecutor;
+    }
+
+    @Bean
+    public JobLauncher jobLauncher(JobRepository jobRepository, TaskExecutor jobTaskExecutor) {
+        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
+        jobLauncher.setJobRepository(jobRepository);
+        jobLauncher.setTaskExecutor(jobTaskExecutor);
+        return jobLauncher;
     }
 
 }
