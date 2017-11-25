@@ -7,4 +7,5 @@ import lombok.Value;
 @Builder
 public class BatchResponse {
     private Long jobExecutionId;
+    private String errorMessage;
 }
