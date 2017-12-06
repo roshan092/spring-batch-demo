@@ -19,6 +19,7 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
@@ -26,13 +27,16 @@ import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
+import javax.sql.DataSource;
 import java.util.Date;
 
 @Configuration
@@ -40,6 +44,22 @@ import java.util.Date;
 public class DemoBatchConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DemoBatchConfiguration.class);
+
+    @Bean
+    public DataSourceTransactionManager transactionManager(@Qualifier("batchDataSource") DataSource batchDataSource) {
+        DataSourceTransactionManager dataSourceTransactionManager = new DataSourceTransactionManager();
+        dataSourceTransactionManager.setDataSource(batchDataSource);
+        return dataSourceTransactionManager;
+    }
+
+    @Bean
+    public JobRepository jobRepository(@Qualifier("batchDataSource") DataSource batchDataSource,
+                                       DataSourceTransactionManager transactionManager) throws Exception {
+        JobRepositoryFactoryBean jobRepositoryFactoryBean = new JobRepositoryFactoryBean();
+        jobRepositoryFactoryBean.setDataSource(batchDataSource);
+        jobRepositoryFactoryBean.setTransactionManager(transactionManager);
+        return jobRepositoryFactoryBean.getObject();
+    }
 
     @Bean
     @StepScope
