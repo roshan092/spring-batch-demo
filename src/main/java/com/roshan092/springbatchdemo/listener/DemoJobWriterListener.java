@@ -15,7 +15,7 @@ public class DemoJobWriterListener implements ItemWriteListener<DemoBatchOutput>
 
     @Override
     public void beforeWrite(List<? extends DemoBatchOutput> items) {
-        items.stream().forEach(item -> LOGGER.info("Before writing items = " + item));
+//        items.stream().forEach(item -> LOGGER.info("Before writing items = " + item));
     }
 
     @Override

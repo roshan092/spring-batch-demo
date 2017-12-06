@@ -77,18 +77,26 @@ public class DemoBatchConfiguration {
     }
 
     @Bean
+    public TaskExecutor stepTaskExecutor() {
+        SimpleAsyncTaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
+        taskExecutor.setConcurrencyLimit(3);
+        return taskExecutor;
+    }
+
+    @Bean
     public Step step(StepBuilderFactory stepBuilderFactory, DemoItemProcessor demoItemProcessor,
                      DemoJobReaderListener DemoJobReaderListener, DemoJobWriterListener demoJobWriterListener,
-                     DemoJobProcessorListener demoJobProcessorListener) {
+                     DemoJobProcessorListener demoJobProcessorListener, TaskExecutor stepTaskExecutor) {
         LOGGER.info("step created ------------------->");
         return stepBuilderFactory.get("step")
-                .<DemoBatchInput, DemoBatchOutput>chunk(10)
+                .<DemoBatchInput, DemoBatchOutput>chunk(1)
                 .reader(reader())
                 .listener(DemoJobReaderListener)
                 .processor(demoItemProcessor)
                 .listener(demoJobProcessorListener)
                 .writer(writer())
                 .listener(demoJobWriterListener)
+                .taskExecutor(stepTaskExecutor)
                 .build();
     }
 
