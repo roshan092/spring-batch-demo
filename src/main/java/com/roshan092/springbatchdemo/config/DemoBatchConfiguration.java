@@ -2,6 +2,10 @@ package com.roshan092.springbatchdemo.config;
 
 import com.roshan092.springbatchdemo.domain.DemoBatchInput;
 import com.roshan092.springbatchdemo.domain.DemoBatchOutput;
+import com.roshan092.springbatchdemo.listener.DemoJobExecutionListener;
+import com.roshan092.springbatchdemo.listener.DemoJobProcessorListener;
+import com.roshan092.springbatchdemo.listener.DemoJobReaderListener;
+import com.roshan092.springbatchdemo.listener.DemoJobWriterListener;
 import com.roshan092.springbatchdemo.service.DemoItemProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,23 +77,29 @@ public class DemoBatchConfiguration {
     }
 
     @Bean
-    public Step step(StepBuilderFactory stepBuilderFactory, DemoItemProcessor demoItemProcessor) {
+    public Step step(StepBuilderFactory stepBuilderFactory, DemoItemProcessor demoItemProcessor,
+                     DemoJobReaderListener DemoJobReaderListener, DemoJobWriterListener demoJobWriterListener,
+                     DemoJobProcessorListener demoJobProcessorListener) {
         LOGGER.info("step created ------------------->");
         return stepBuilderFactory.get("step")
                 .<DemoBatchInput, DemoBatchOutput>chunk(1)
                 .reader(reader())
+                .listener(DemoJobReaderListener)
                 .processor(demoItemProcessor)
+                .listener(demoJobProcessorListener)
                 .writer(writer())
+                .listener(demoJobWriterListener)
                 .build();
     }
 
     @Bean(name = "demoJob")
-    public Job job(JobBuilderFactory jobBuilderFactory, Step step) {
+    public Job job(JobBuilderFactory jobBuilderFactory, Step step, DemoJobExecutionListener demoJobExecutionListener) {
         LOGGER.info("demoJob created ------------------->");
         return jobBuilderFactory.get("demoJob")
                 .incrementer(new RunIdIncrementer())
                 .flow(step)
                 .end()
+                .listener(demoJobExecutionListener)
                 .build();
     }
 
