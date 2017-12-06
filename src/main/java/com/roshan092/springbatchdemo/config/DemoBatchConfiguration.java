@@ -14,6 +14,7 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
@@ -25,6 +26,7 @@ import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
@@ -40,10 +42,12 @@ public class DemoBatchConfiguration {
     private static final Logger LOGGER = LoggerFactory.getLogger(DemoBatchConfiguration.class);
 
     @Bean
-    public FlatFileItemReader<DemoBatchInput> reader() {
-        LOGGER.info("FlatFileItemReader created ------------------->");
+    @StepScope
+    public FlatFileItemReader<DemoBatchInput> reader(@Value("#{jobParameters[inputFileName]}") String inputFileName) {
+        String inputFilePath = String.format("C:\\Users\\roslobo\\spring-batch\\input\\%s", inputFileName);
+        LOGGER.info("FlatFileItemReader created with file name ------------------->" + inputFilePath);
         FlatFileItemReader<DemoBatchInput> reader = new FlatFileItemReader<>();
-        reader.setResource(new FileSystemResource("C:\\Users\\roslobo\\spring-batch\\input\\sample-data-100.csv"));
+        reader.setResource(new FileSystemResource(inputFilePath));
         reader.setLinesToSkip(1);
         reader.setLineMapper(new DefaultLineMapper<DemoBatchInput>() {{
             setLineTokenizer(new DelimitedLineTokenizer() {{
@@ -57,11 +61,13 @@ public class DemoBatchConfiguration {
     }
 
     @Bean
-    public FlatFileItemWriter<DemoBatchOutput> writer() {
-        LOGGER.info("FlatFileItemWriter created ------------------->");
+    @StepScope
+    public FlatFileItemWriter<DemoBatchOutput> writer(@Value("#{jobParameters[outputFileName]}") String outputFileName) {
         long timeStamp = new Date().getTime();
+        String outputFilePath = String.format("C:\\Users\\roslobo\\spring-batch\\output\\%s-%d.csv", outputFileName, timeStamp);
+        LOGGER.info("FlatFileItemWriter created ------------------->" + outputFilePath);
         FlatFileItemWriter<DemoBatchOutput> writer = new FlatFileItemWriter<>();
-        writer.setResource(new FileSystemResource("C:\\Users\\roslobo\\spring-batch\\output\\sample-data-100" + timeStamp + ".csv"));
+        writer.setResource(new FileSystemResource(outputFilePath));
         writer.setHeaderCallback(
                 headerWriter -> headerWriter.write("id, value"));
 
@@ -77,24 +83,29 @@ public class DemoBatchConfiguration {
     }
 
     @Bean
-    public TaskExecutor stepTaskExecutor() {
+    @StepScope
+    public TaskExecutor stepTaskExecutor(@Value("#{jobParameters[noOfThreads]}") Integer noOfThreads) {
+        System.out.println("StepTaskExecutor created with noOfThreads = " + noOfThreads);
         SimpleAsyncTaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
-        taskExecutor.setConcurrencyLimit(3);
+        taskExecutor.setConcurrencyLimit(noOfThreads);
         return taskExecutor;
     }
 
     @Bean
-    public Step step(StepBuilderFactory stepBuilderFactory, DemoItemProcessor demoItemProcessor,
+    public Step step(StepBuilderFactory stepBuilderFactory,
+                     FlatFileItemReader<DemoBatchInput> flatFileItemReader,
+                     DemoItemProcessor demoItemProcessor,
+                     FlatFileItemWriter<DemoBatchOutput> flatFileItemWriter,
                      DemoJobReaderListener DemoJobReaderListener, DemoJobWriterListener demoJobWriterListener,
                      DemoJobProcessorListener demoJobProcessorListener, TaskExecutor stepTaskExecutor) {
         LOGGER.info("step created ------------------->");
         return stepBuilderFactory.get("step")
-                .<DemoBatchInput, DemoBatchOutput>chunk(1)
-                .reader(reader())
+                .<DemoBatchInput, DemoBatchOutput>chunk(10)
+                .reader(flatFileItemReader)
                 .listener(DemoJobReaderListener)
                 .processor(demoItemProcessor)
                 .listener(demoJobProcessorListener)
-                .writer(writer())
+                .writer(flatFileItemWriter)
                 .listener(demoJobWriterListener)
                 .taskExecutor(stepTaskExecutor)
                 .build();
