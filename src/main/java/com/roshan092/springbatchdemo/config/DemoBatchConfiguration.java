@@ -82,7 +82,7 @@ public class DemoBatchConfiguration {
                      DemoJobProcessorListener demoJobProcessorListener) {
         LOGGER.info("step created ------------------->");
         return stepBuilderFactory.get("step")
-                .<DemoBatchInput, DemoBatchOutput>chunk(1)
+                .<DemoBatchInput, DemoBatchOutput>chunk(10)
                 .reader(reader())
                 .listener(DemoJobReaderListener)
                 .processor(demoItemProcessor)
